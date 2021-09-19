@@ -11,5 +11,5 @@ func init() {
 	fmt.Println("main init")
 }
 func main() {
-
+	fmt.Println(123)
 }
