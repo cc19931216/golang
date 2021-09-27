@@ -1,34 +1,44 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
-func login(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(string("post")))
-	r.ParseForm()
-	fmt.Println(r.Header["Content-Type"])
-	str, err := json.Marshal(r.Header["Content-Type"])
-	if err != nil {
-		log.Fatal(err)
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	for k, v := range r.Header {
+		w.Header().Set(k, v[0])
+		for _, str := range v[1:] {
+			w.Header().Add(k, str)
+		}
 	}
-	w.Write(str)
+	w.Header().Set("VERSION", os.Getenv("VERSION"))
+	log.Println(r.Host, 200)
+}
+
+func HealthzHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
 }
 
 func main() {
+	log.SetOutput(os.Stdout)
+	err := os.Setenv("VERSION", "1")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	server := &http.Server{
 		Addr:         "127.0.0.1:8080",
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,
 	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/login", login)
+	mux.HandleFunc("/", IndexHandler)
+	mux.HandleFunc("/healthz", HealthzHandler)
 	server.Handler = mux
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
